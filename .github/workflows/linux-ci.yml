@@ -1,7 +1,22 @@
 ---
 name: Linux build and test
+run-name: "Linux build and test ${{ inputs.leg || github.event_name }} ${{ inputs.racecar_run }}"
 on:
   workflow_dispatch:
+    inputs:
+      leg:
+        description: "baseline (uninstrumented) or instrumented (under chalk/curiosity)"
+        type: choice
+        options: [instrumented, baseline]
+        default: baseline
+      profile:
+        description: "CrashOverride chalk profile"
+        type: string
+        default: curiosity-tests-racecar
+      racecar_run:
+        description: "racecar correlation token, echoed into the run name"
+        type: string
+        default: ""
   push:
     branches:
       - 'master'
@@ -13,6 +28,9 @@ on:
     types:
       - created
 
+
+env:
+  CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 jobs:
   test:
     name: Run tests
