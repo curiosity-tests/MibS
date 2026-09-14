@@ -29,6 +29,9 @@ on:
       - created
 
 
+permissions:
+  contents: read
+  id-token: write
 env:
   CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 jobs:
@@ -48,16 +51,30 @@ jobs:
             download_requirements: brew install metis bash
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: crashappsec/action-checkout@main
         with:
+          chalk: ${{ env.CHALK_ON }}
+          profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+          lfs: false
           path: ${{ github.event.repository.name }}
+      - name: Assert instrumentation is live
+        if: env.CHALK_ON == 'true'
+        run: |
+          test -n "${CURIOSITY_ROOT:-}" || { echo "::error::CURIOSITY_ROOT unset - observables never installed"; exit 1; }
       - name: Install required packages from package manager
         run: ${{ matrix.download_requirements }}
       - name: Checkout coinbrew
-        uses: actions/checkout@v6
+        uses: crashappsec/action-checkout@main
         with:
+          chalk: ${{ env.CHALK_ON }}
+          profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+          lfs: false
           repository: coin-or/coinbrew
           path: coinbrew
+      - name: Assert instrumentation is live
+        if: env.CHALK_ON == 'true'
+        run: |
+          test -n "${CURIOSITY_ROOT:-}" || { echo "::error::CURIOSITY_ROOT unset - observables never installed"; exit 1; }
       - name: Build project
         run: |
           export ${{ matrix.flags }}
@@ -81,11 +98,18 @@ jobs:
           cp ${{ github.event.repository.name }}/LICENSE dist/
           tar -czvf release.tar.gz -C dist .
       - name: Checkout package name generation script
-        uses: actions/checkout@v6
+        uses: crashappsec/action-checkout@main
         with:
+          chalk: ${{ env.CHALK_ON }}
+          profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+          lfs: false
           repository: coin-or-tools/platform-analysis-tools
           path: tools
           ref: 0.0.2
+      - name: Assert instrumentation is live
+        if: env.CHALK_ON == 'true'
+        run: |
+          test -n "${CURIOSITY_ROOT:-}" || { echo "::error::CURIOSITY_ROOT unset - observables never installed"; exit 1; }
       - name: Retrieve platform info
         run: |
           python3 -m venv venv
